@@ -1,0 +1,6 @@
+debug.save_anchors_to_boxes(self.anchors.get(), detection_boxes, detection_scores)
+debug.get_feature_maps_to_boxes_stats(printVals=True)
+
+put in line 381 in file ssd_meta_arch.py
+      
+      
