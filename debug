@@ -1,0 +1,96 @@
+import tensorflow as tf
+import json
+
+def init():
+    global tensors_dict
+    tensors_dict = {}
+    global feature_maps_to_anchors_dict
+    feature_maps_to_anchors_dict = {}
+    global anchors_to_boxes
+    anchors_to_boxes = []
+    global feature_maps_to_boxes
+    feature_maps_to_boxes = {}
+
+def addTensor(k, v):
+    if k not in tensors_dict.keys():
+        tensors_dict[k] = v
+
+
+def printTensor(k, fromDict = False, printVal=False, path=None):
+    config = tf.ConfigProto(allow_soft_placement=True)
+    init = tf.initialize_all_variables()
+    with tf.Session(config=config) as sess:
+        sess.run(init)
+        interest_values = {}
+        if fromDict:
+            val = tensors_dict[k]
+            interest_values['name'] = k
+        else:
+            val = k
+            interest_values['name'] = 'tensor'
+
+        tensorInfo = sess.run(val)
+
+        interest_values['shape'] = str(tensorInfo.shape)
+        interest_values['dtype'] = str(tensorInfo.dtype)
+        interest_values['val'] = str(tensorInfo[:])
+
+        print("Tensor shape: "+interest_values['shape'])
+        print("Tensor dtype: "+interest_values['dtype'] )
+
+        if printVal:
+            print('Tensor Val:')
+            print(interest_values['val'])
+
+        if path:
+            with open(path, 'w') as f:
+                json.dump(interest_values, f)
+
+
+
+def get_feature_maps_to_boxes_stats(printVals=False):
+    for key, val in feature_maps_to_boxes.items():
+        print(key)
+        print(len(val))
+
+    if (printVals):
+        for key, val in feature_maps_to_boxes.items():
+            print(key)
+            print(val)
+
+def save_anchors_to_boxes(anchors, boxes, scores):
+    import numpy as np
+
+    config = tf.ConfigProto(allow_soft_placement=True)
+    init = tf.initialize_all_variables()
+    with tf.Session(config=config) as sess:
+        coord = tf.train.Coordinator()
+        threads = tf.train.start_queue_runners(sess=sess, coord=coord)
+        sess.run(init)
+        anchors = sess.run(anchors)
+        boxes = sess.run(boxes)
+        scores = sess.run(scores)
+
+        anchors = anchors.tolist()
+        boxes = boxes.tolist()
+        scores = scores.tolist()
+
+        for key, val in feature_maps_to_anchors_dict.items():
+            feature_maps_to_boxes[key] = []
+            for v in val:
+                v = list(v)
+                ind = anchors.index(v)
+                b = boxes[0][ind]
+                s = scores[0][ind]
+                feature_maps_to_boxes[key].append((b, s))
+
+
+def save_feature_map_to_anchor(size, anchor_list):
+    config = tf.ConfigProto(allow_soft_placement=True)
+    init = tf.initialize_all_variables()
+    with tf.Session(config=config) as sess:
+        sess.run(init)
+        tensorInfo = sess.run(anchor_list.data['boxes'])
+        feature_maps_to_anchors_dict[size] = tensorInfo
+
+
